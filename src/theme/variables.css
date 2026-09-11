@@ -1,0 +1,472 @@
+/**
+ * Class Trackerbonia design system.
+ *
+ * Dark-first, monochromatic graphite with a restrained teal accent. Structure is
+ * carried by 1px borders and spacing rather than shadows, so the interface reads
+ * as a professional admin tool rather than a stack of floating cards.
+ *
+ * Status colours are reserved (present / absent / late / excused). They tint an
+ * icon, a badge and a number - never a whole surface - and every place they are
+ * used also carries a text label, so hue is never the only cue.
+ */
+
+/* ---------------------------------------------------------------------- */
+/* Dark palette - the designed default                                     */
+/* ---------------------------------------------------------------------- */
+
+:root {
+  /* Surfaces */
+  --ct-bg: #0b0f14;
+  --ct-bg-2: #11161d;
+  --ct-card: #151b23;
+  --ct-elevated: #1b222c;
+  --ct-border: #27313d;
+  --ct-border-soft: #1f2732;
+
+  /* Ink */
+  --ct-text: #f5f7fa;
+  --ct-text-2: #8d99a8;
+  --ct-text-3: #5f6b78;
+
+  /* Brand */
+  --ct-accent: #19b5a5;
+  --ct-accent-2: #2dd4bf;
+  --ct-accent-soft: rgba(25, 181, 165, 0.12);
+  --ct-accent-line: rgba(25, 181, 165, 0.32);
+
+  /* Reserved status palette */
+  --ct-present: #22c55e;
+  --ct-present-soft: rgba(34, 197, 94, 0.12);
+  --ct-absent: #ef4444;
+  --ct-absent-soft: rgba(239, 68, 68, 0.12);
+  --ct-late: #f59e0b;
+  --ct-late-soft: rgba(245, 158, 11, 0.12);
+  --ct-excused: #3b82f6;
+  --ct-excused-soft: rgba(59, 130, 246, 0.12);
+
+  /* Geometry */
+  --ct-r-lg: 16px;
+  --ct-r-md: 12px;
+  --ct-r-sm: 10px;
+  --ct-r-chip: 8px;
+  --ct-gutter: 16px;
+
+  --ct-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ct-shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  /* Ionic bindings */
+  --ion-background-color: #0b0f14;
+  --ion-background-color-rgb: 11, 15, 20;
+  --ion-text-color: #f5f7fa;
+  --ion-text-color-rgb: 245, 247, 250;
+  --ion-toolbar-background: #0b0f14;
+  --ion-item-background: #151b23;
+  --ion-card-background: #151b23;
+  --ion-border-color: #27313d;
+
+  --ion-color-primary: #19b5a5;
+  --ion-color-primary-rgb: 25, 181, 165;
+  --ion-color-primary-contrast: #04120f;
+  --ion-color-primary-contrast-rgb: 4, 18, 15;
+  --ion-color-primary-shade: #15a093;
+  --ion-color-primary-tint: #2dd4bf;
+
+  --ion-color-success: #22c55e;
+  --ion-color-success-rgb: 34, 197, 94;
+  --ion-color-warning: #f59e0b;
+  --ion-color-warning-rgb: 245, 158, 11;
+  --ion-color-danger: #ef4444;
+  --ion-color-danger-rgb: 239, 68, 68;
+  --ion-color-medium: #8d99a8;
+  --ion-color-medium-rgb: 141, 153, 168;
+
+  /* iOS system face first; Inter is used when the device has it. */
+  --ion-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', Inter,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Light palette - the same system, inverted with care                     */
+/* ---------------------------------------------------------------------- */
+
+:root:not(.ion-palette-dark) {
+  --ct-bg: #f4f6f8;
+  --ct-bg-2: #ffffff;
+  --ct-card: #ffffff;
+  --ct-elevated: #ffffff;
+  --ct-border: #dde3ea;
+  --ct-border-soft: #e8edf2;
+
+  --ct-text: #0b0f14;
+  --ct-text-2: #5f6b78;
+  --ct-text-3: #8d99a8;
+
+  /* A darker teal keeps contrast on white. */
+  --ct-accent: #0f9488;
+  --ct-accent-2: #12a394;
+  --ct-accent-soft: rgba(15, 148, 136, 0.1);
+  --ct-accent-line: rgba(15, 148, 136, 0.28);
+
+  --ct-present: #15803d;
+  --ct-present-soft: rgba(21, 128, 61, 0.1);
+  --ct-absent: #b91c1c;
+  --ct-absent-soft: rgba(185, 28, 28, 0.1);
+  --ct-late: #b45309;
+  --ct-late-soft: rgba(180, 83, 9, 0.12);
+  --ct-excused: #1d4ed8;
+  --ct-excused-soft: rgba(29, 78, 216, 0.1);
+
+  --ct-shadow: 0 1px 2px rgba(11, 15, 20, 0.06);
+  --ct-shadow-lift: 0 8px 24px rgba(11, 15, 20, 0.1);
+
+  --ion-background-color: #f4f6f8;
+  --ion-background-color-rgb: 244, 246, 248;
+  --ion-text-color: #0b0f14;
+  --ion-text-color-rgb: 11, 15, 20;
+  --ion-toolbar-background: #ffffff;
+  --ion-item-background: #ffffff;
+  --ion-card-background: #ffffff;
+  --ion-border-color: #dde3ea;
+
+  --ion-color-primary: #0f9488;
+  --ion-color-primary-rgb: 15, 148, 136;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #0d8279;
+  --ion-color-primary-tint: #12a394;
+
+  --ion-color-success: #15803d;
+  --ion-color-success-rgb: 21, 128, 61;
+  --ion-color-warning: #b45309;
+  --ion-color-warning-rgb: 180, 83, 9;
+  --ion-color-danger: #b91c1c;
+  --ion-color-danger-rgb: 185, 28, 28;
+}
+
+/**
+ * Ionic's dark palette sets the page surfaces on `body` with a selector that
+ * outranks `:root`, which left the page plane pure black while our toolbars used
+ * #0B0F14. These re-declare the same tokens at matching specificity so the whole
+ * app sits on one surface.
+ */
+.ion-palette-dark.ios body,
+.ion-palette-dark.md body,
+.ion-palette-dark body {
+  --ion-background-color: #0b0f14;
+  --ion-background-color-rgb: 11, 15, 20;
+  --ion-text-color: #f5f7fa;
+  --ion-text-color-rgb: 245, 247, 250;
+  --ion-toolbar-background: #0b0f14;
+  --ion-item-background: #151b23;
+  --ion-card-background: #151b23;
+  --ion-border-color: #27313d;
+  --ion-overlay-background-color: #1b222c;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Page chrome                                                             */
+/* ---------------------------------------------------------------------- */
+
+ion-content {
+  --background: var(--ct-bg);
+  --padding-start: var(--ct-gutter);
+  --padding-end: var(--ct-gutter);
+  --padding-bottom: 24px;
+}
+
+ion-header ion-toolbar {
+  --background: var(--ct-bg);
+  --color: var(--ct-text);
+  --border-width: 0 0 1px 0;
+  --border-color: var(--ct-border-soft);
+  --min-height: 52px;
+}
+
+ion-title {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+ion-header[collapse='condense'] ion-toolbar {
+  --border-width: 0;
+  --background: transparent;
+}
+
+ion-header[collapse='condense'] ion-title[size='large'] {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  padding-inline: 4px;
+}
+
+ion-toolbar ion-button {
+  --color: var(--ct-text-2);
+  --color-activated: var(--ct-accent);
+}
+
+ion-modal {
+  --background: var(--ct-bg);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Typography helpers                                                      */
+/* ---------------------------------------------------------------------- */
+
+.ct-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ct-text-3);
+}
+
+.ct-muted {
+  color: var(--ct-text-2);
+}
+
+.ct-figure {
+  font-size: 32px;
+  font-weight: 750;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  color: var(--ct-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Controls                                                                */
+/* ---------------------------------------------------------------------- */
+
+.ct-button-primary {
+  --background: var(--ct-accent);
+  --background-activated: var(--ct-accent-2);
+  --background-focused: var(--ct-accent-2);
+  --color: var(--ion-color-primary-contrast);
+  --border-radius: var(--ct-r-md);
+  --box-shadow: none;
+  --padding-top: 18px;
+  --padding-bottom: 18px;
+  min-height: 50px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  margin: 0;
+}
+
+.ct-button-secondary {
+  --background: var(--ct-elevated);
+  --background-activated: var(--ct-border);
+  --color: var(--ct-text);
+  --border-radius: var(--ct-r-md);
+  --border-width: 1px;
+  --border-style: solid;
+  --border-color: var(--ct-border);
+  --box-shadow: none;
+  min-height: 46px;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: none;
+  margin: 0;
+}
+
+/* Segmented control used for status pickers and filters */
+.ct-segment {
+  --background: var(--ct-bg-2);
+  border: 1px solid var(--ct-border);
+  border-radius: var(--ct-r-md);
+  padding: 3px;
+}
+
+.ct-segment ion-segment-button {
+  --background-checked: var(--ct-elevated);
+  --color: var(--ct-text-2);
+  --color-checked: var(--ct-text);
+  --indicator-color: var(--ct-elevated);
+  --indicator-box-shadow: none;
+  --border-radius: var(--ct-r-sm);
+  --padding-start: 4px;
+  --padding-end: 4px;
+  min-height: 36px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+/* Form fields inside grouped lists */
+.ct-field-list {
+  margin: 0;
+  padding: 0;
+  background: var(--ct-card);
+  border: 1px solid var(--ct-border);
+  border-radius: var(--ct-r-md);
+  overflow: hidden;
+}
+
+.ct-field-list ion-item {
+  --background: var(--ct-card);
+  --border-color: var(--ct-border-soft);
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --min-height: 62px;
+  --highlight-color-focused: var(--ct-accent);
+}
+
+.ct-field-list ion-input,
+.ct-field-list ion-textarea,
+.ct-field-list ion-select {
+  --color: var(--ct-text);
+  --placeholder-color: var(--ct-text-3);
+  --placeholder-opacity: 1;
+  font-size: 15px;
+}
+
+.ct-field-list ion-label,
+.ct-field-list .label-text {
+  color: var(--ct-text-2) !important;
+}
+
+/* Toast + alerts sit on the elevated surface */
+.ct-toast {
+  --background: var(--ct-elevated);
+  --color: var(--ct-text);
+  --border-radius: var(--ct-r-md);
+  --box-shadow: var(--ct-shadow-lift);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.ct-safe-bottom {
+  padding-bottom: calc(24px + var(--ion-safe-area-bottom, 0px));
+}
+
+/* ---------------------------------------------------------------------- */
+/* Status badges - colour always paired with a label                       */
+/* ---------------------------------------------------------------------- */
+
+.ct-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--ct-r-chip);
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.ct-status ion-icon {
+  font-size: 12px;
+}
+
+.ct-status--present {
+  color: var(--ct-present);
+  background: var(--ct-present-soft);
+  border-color: var(--ct-present-soft);
+}
+
+.ct-status--absent {
+  color: var(--ct-absent);
+  background: var(--ct-absent-soft);
+  border-color: var(--ct-absent-soft);
+}
+
+.ct-status--late {
+  color: var(--ct-late);
+  background: var(--ct-late-soft);
+  border-color: var(--ct-late-soft);
+}
+
+.ct-status--excused {
+  color: var(--ct-excused);
+  background: var(--ct-excused-soft);
+  border-color: var(--ct-excused-soft);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Progress meter                                                          */
+/* ---------------------------------------------------------------------- */
+
+.ct-meter {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ct-elevated);
+  overflow: hidden;
+}
+
+.ct-meter__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--ct-accent);
+  transition: width 0.3s ease;
+}
+
+.ct-meter__fill--good {
+  background: var(--ct-present);
+}
+.ct-meter__fill--warning {
+  background: var(--ct-late);
+}
+.ct-meter__fill--critical {
+  background: var(--ct-absent);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Motion - subtle, and off entirely when the system asks                  */
+/* ---------------------------------------------------------------------- */
+
+@keyframes ct-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ct-enter {
+  animation: ct-fade-in 220ms ease both;
+}
+
+@keyframes ct-shimmer {
+  from {
+    background-position: -200px 0;
+  }
+  to {
+    background-position: 240px 0;
+  }
+}
+
+.ct-skeleton {
+  border-radius: var(--ct-r-sm);
+  background: var(--ct-elevated);
+  background-image: linear-gradient(
+    90deg,
+    var(--ct-elevated) 0%,
+    var(--ct-border) 50%,
+    var(--ct-elevated) 100%
+  );
+  background-size: 440px 100%;
+  background-repeat: no-repeat;
+  animation: ct-shimmer 1.3s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-enter,
+  .ct-skeleton {
+    animation: none;
+  }
+
+  .ct-meter__fill {
+    transition: none;
+  }
+}

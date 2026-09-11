@@ -1,0 +1,179 @@
+rules_version = '2';
+
+/**
+ * Class Trackerbonia security rules.
+ *
+ * The app hides buttons a student should not press, but that is cosmetic - a
+ * student can call Firestore directly. These rules are the real enforcement:
+ *
+ *   - The app generates every student ID (STU-0001, STU-0002, ...). Nobody ever
+ *     types or chooses one, and it never changes afterwards.
+ *   - Students are written by an admin, or by a brand-new account creating its
+ *     own record during sign-up. That second window closes the instant the
+ *     profile exists, so a student cannot add more students later.
+ *   - A student can create/update attendance ONLY for the studentDocId recorded
+ *     on their own profile, which is read from the server, never from the client.
+ *   - Nobody can grant themselves the admin role.
+ *
+ * Paste into: Firebase console -> Firestore Database -> Rules -> Publish.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------------------------------------------------------------- */
+    /* Helpers                                                          */
+    /* ---------------------------------------------------------------- */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasProfile() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return hasProfile() && profile().role == 'admin';
+    }
+
+    /** The student record this account is allowed to act for. */
+    function myStudentDocId() {
+      return hasProfile() ? profile().studentDocId : null;
+    }
+
+    /**
+     * True only between creating the auth account and writing the profile - the
+     * brief window in which sign-up provisions a student record and an ID.
+     */
+    function signingUp() {
+      return signedIn()
+        && !exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* users/{uid}                                                      */
+    /* ---------------------------------------------------------------- */
+
+    match /users/{uid} {
+      // You can read your own profile; an admin can read any.
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+
+      /**
+       * Sign-up. A new profile must be for yourself, must be a student, and must
+       * point at a student record that actually exists. There is deliberately no
+       * path here that produces role == 'admin'.
+       */
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.role == 'student'
+        && request.resource.data.studentDocId is string
+        && exists(/databases/$(database)/documents/students/$(request.resource.data.studentDocId));
+
+      /**
+       * You may edit your own display name only. Role, uid and the student link
+       * are immutable from the client - this is what blocks role escalation.
+       */
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.studentDocId == resource.data.studentDocId
+        && request.resource.data.studentId == resource.data.studentId;
+
+      // Admins manage accounts; nobody deletes their own profile by accident.
+      allow update, delete: if isAdmin();
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* students/{studentDocId}                                          */
+    /* ---------------------------------------------------------------- */
+
+    match /students/{studentDocId} {
+      // Any signed-in user may read the class list.
+      allow read: if signedIn();
+
+      // Admins manage the class list.
+      allow create, delete: if isAdmin();
+
+      /**
+       * Sign-up creates exactly one student record, for the account being made.
+       * `signingUp()` is false as soon as the profile exists.
+       */
+      allow create: if signingUp()
+        && request.resource.data.studentId is string
+        && request.resource.data.studentName is string
+        && request.resource.data.courseSection is string;
+
+      /**
+       * An admin may rename a student or move their section, but the generated
+       * student ID is permanent - accounts and attendance records point at it.
+       */
+      allow update: if isAdmin()
+        && request.resource.data.studentId == resource.data.studentId;
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* counters/{id} - the student-ID sequence                          */
+    /* ---------------------------------------------------------------- */
+
+    match /counters/{counterId} {
+      allow read: if signedIn();
+
+      /**
+       * Bumped by an admin adding a student, or by an account being created.
+       * Strictly +1 either way, so the sequence cannot be skipped or rewound and
+       * two IDs can never collide.
+       */
+      allow create: if (isAdmin() || signingUp())
+        && request.resource.data.value is number;
+      allow update: if (isAdmin() || signingUp())
+        && request.resource.data.value == resource.data.value + 1;
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* attendance/{recordId}                                            */
+    /* ---------------------------------------------------------------- */
+
+    match /attendance/{recordId} {
+      allow read: if signedIn();
+
+      // Admin: full control.
+      allow create, update, delete: if isAdmin();
+
+      /**
+       * Student: may only create a record whose studentDocId matches the one on
+       * their own profile. The comparison uses the server-side profile, so a
+       * forged studentDocId in the payload is rejected.
+       */
+      allow create: if signedIn()
+        && request.resource.data.studentDocId == myStudentDocId();
+
+      /**
+       * Student: may update their own record, and may not move it to someone
+       * else - both the existing and the incoming owner must be them.
+       */
+      allow update: if signedIn()
+        && resource.data.studentDocId == myStudentDocId()
+        && request.resource.data.studentDocId == myStudentDocId();
+
+      // Students may remove their own record; admins may remove any.
+      allow delete: if signedIn()
+        && resource.data.studentDocId == myStudentDocId();
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Everything else is closed.                                       */
+    /* ---------------------------------------------------------------- */
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

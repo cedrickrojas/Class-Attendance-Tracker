@@ -1,0 +1,7 @@
+{
+  "name": "Class Trackerbonia",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
