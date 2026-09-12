@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
+import { watch } from 'vue';
 import type { RouteRecordRaw } from 'vue-router';
 import TabsPage from '@/views/TabsPage.vue';
 import { useAuth } from '@/composables/useAuth';
@@ -82,5 +83,22 @@ router.beforeEach(async (to) => {
 
   return true;
 });
+
+/**
+ * Reconciliation for the cached profile.
+ *
+ * The guard above is allowed to let a user through on a profile restored from
+ * disk, so the server check happens a moment later. If that check comes back
+ * saying the profile is gone - deleted account, revoked access - this is what
+ * removes them from the protected screens.
+ */
+watch(
+  () => useAuth().isAuthenticated.value,
+  (authenticated) => {
+    if (authenticated) return;
+    if (router.currentRoute.value.meta.public === true) return;
+    void router.replace('/login');
+  }
+);
 
 export default router;

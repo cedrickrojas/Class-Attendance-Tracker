@@ -14,6 +14,41 @@ import type { SignupInput, UserProfile } from '@/types';
 
 const user = ref<User | null>(null);
 const profile = ref<UserProfile | null>(null);
+
+/* -------------------------------------------------------------------------- */
+/* Cached profile                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The last profile we successfully read, kept on disk.
+ *
+ * This exists purely for start-up speed. Reading `users/{uid}` is a network
+ * round-trip, and blocking the first paint on it is what made the iOS app feel
+ * slow to open. With a cached copy the app can render immediately and verify
+ * against the server a moment later.
+ */
+const PROFILE_KEY = 'classtrackerbonia.profile';
+
+function readCachedProfile(uid: string): UserProfile | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as UserProfile;
+    // Never trust a profile that belongs to a different account.
+    return cached?.uid === uid ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedProfile(next: UserProfile | null): void {
+  try {
+    if (next) localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
+    else localStorage.removeItem(PROFILE_KEY);
+  } catch {
+    // Storage full or disabled - the app still works, just starts slower.
+  }
+}
 /** True until Firebase has reported the restored session once. */
 const initializing = ref(true);
 /** True while a sign-in / sign-up / sign-out request is in flight. */
@@ -24,6 +59,13 @@ let resolveReady: () => void;
 const ready = new Promise<void>((resolve) => {
   resolveReady = resolve;
 });
+
+/**
+ * Nothing may hold the first paint hostage. Firebase normally reports the
+ * restored session in a few milliseconds, but if it ever stalls the app opens
+ * signed-out rather than sitting on a blank screen.
+ */
+const READY_TIMEOUT_MS = 2500;
 
 /** Called once from main.ts, before the app mounts. */
 export function initAuth(): Promise<void> {
@@ -36,25 +78,68 @@ export function initAuth(): Promise<void> {
     return ready;
   }
 
-  api.watchAuthState(async (nextUser) => {
+  const bailout = setTimeout(() => {
+    initializing.value = false;
+    resolveReady();
+  }, READY_TIMEOUT_MS);
+
+  api.watchAuthState((nextUser) => {
+    clearTimeout(bailout);
     user.value = nextUser;
 
     if (!nextUser) {
       profile.value = null;
-    } else {
-      try {
-        profile.value = await api.getUserProfile(nextUser.uid);
-      } catch {
-        // Offline or rules problem - treat as "no profile" rather than crashing.
-        profile.value = null;
-      }
+      writeCachedProfile(null);
+      initializing.value = false;
+      resolveReady();
+      return;
     }
 
-    initializing.value = false;
-    resolveReady();
+    // Firebase has already restored the session from the keychain at this point,
+    // so the only thing left is the profile document. Serve the cached copy and
+    // release the router straight away; the refresh below runs off the critical
+    // path and corrects the state if anything changed server-side.
+    const cached = readCachedProfile(nextUser.uid);
+    if (cached) {
+      profile.value = cached;
+      initializing.value = false;
+      resolveReady();
+      void refreshProfile(nextUser.uid);
+      return;
+    }
+
+    // First sign-in on this device - there is nothing to show yet, so this one
+    // fetch has to be awaited.
+    void refreshProfile(nextUser.uid).finally(() => {
+      initializing.value = false;
+      resolveReady();
+    });
   });
 
   return ready;
+}
+
+/**
+ * Re-reads `users/{uid}` and reconciles the cache.
+ *
+ * Failures are deliberately non-destructive: a dropped connection should not
+ * sign a user out of an app whose data is already on disk. Only a definite
+ * "this profile no longer exists" clears the session.
+ */
+async function refreshProfile(uid: string): Promise<void> {
+  let fresh: UserProfile | null;
+  try {
+    fresh = await api.getUserProfile(uid);
+  } catch {
+    // Offline or a transient error - keep whatever we are already showing.
+    return;
+  }
+
+  // Ignore a late response for an account that has since signed out or changed.
+  if (user.value?.uid !== uid) return;
+
+  profile.value = fresh;
+  writeCachedProfile(fresh);
 }
 
 export function useAuth() {
@@ -71,6 +156,7 @@ export function useAuth() {
     try {
       const next = await api.login(email, password);
       profile.value = next;
+      writeCachedProfile(next);
       return next;
     } finally {
       busy.value = false;
@@ -82,6 +168,7 @@ export function useAuth() {
     try {
       const next = await api.signupStudent(input);
       profile.value = next;
+      writeCachedProfile(next);
       return next;
     } finally {
       busy.value = false;
@@ -94,6 +181,7 @@ export function useAuth() {
       await api.logout();
       profile.value = null;
       user.value = null;
+      writeCachedProfile(null);
     } finally {
       busy.value = false;
     }

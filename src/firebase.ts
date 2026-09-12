@@ -10,7 +10,13 @@
  */
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentSingleTabManager,
+  type Firestore,
+} from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAbUNQpiNyKUKU6ckLK7uxKWtfTJdKaamw',
@@ -38,7 +44,28 @@ if (!isFirebaseConfigured) {
 
 const app: FirebaseApp = initializeApp(firebaseConfig);
 
-export const db: Firestore = getFirestore(app);
+/**
+ * Firestore with an on-disk cache.
+ *
+ * Without this every cold start re-fetches the same documents over the network,
+ * which is what made the iOS app feel slow to open. With it, a returning user
+ * gets the last known students/attendance straight from IndexedDB while the
+ * fresh copy streams in behind. Single-tab manager because the app only ever
+ * runs in one web view.
+ */
+function createDb(): Firestore {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentSingleTabManager(undefined) }),
+    });
+  } catch (error) {
+    // Storage disabled (private mode, quota, older web view) - memory cache is fine.
+    console.warn('[Class Trackerbonia] Firestore disk cache unavailable:', error);
+    return getFirestore(app);
+  }
+}
+
+export const db: Firestore = createDb();
 
 /**
  * Firebase Authentication. Persistence defaults to local storage on the web and
